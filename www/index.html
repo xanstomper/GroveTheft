@@ -752,45 +752,47 @@ function launchGameEngine() {
 	const dm = navigator.deviceMemory || 8;
 	const hc = navigator.hardwareConcurrency || 4;
 
-	// WebGPU performance tuning: optimized for smooth 30-60 FPS on Intel N97 / Intel UHD Graphics
+	// Three quality tiers: ?low=1 (potato fallback for weak hardware) < NORMAL default < ?quality=high.
+	// Normal default mirrors GTA V's "Normal" PC preset — real textures/shadows/effects, still optimized.
 	const wantHigh = q.get('quality') === 'high';
 	const isLowRam = (dm <= 4 || isChromebook);
 	lowMemory = lowParam === '1' || isChromebook || (lowParam !== '0' && isLowRam);
+	const potato = lowMemory && !wantHigh;
 
-	// By default on Intel UHD / low-wattage APUs:
-	// -shadowQuality=-1 skips 600-900 cascade shadow draws per frame (saves ~40ms GPU time).
-	// ?shadows=1 or ?quality=high re-enables real-time directional shadow cascades.
-	const shadowVal = q.get('shadows') === '1' ? '0' : (wantHigh ? '0' : '-1');
-	const textVal = q.get('textures') !== null ? q.get('textures') : (wantHigh ? '1' : '0');
+	// Shadows ON by default (quality 0 = normal cascades). ?shadows=0 or potato tier disables;
+	// potato additionally skips cascade draws entirely (-1) to save ~40ms GPU time on weak APUs.
+	const shadowVal = (q.get('shadows') === '0' || potato) ? (potato ? '-1' : '0') : '0';
+	const textVal = q.get('textures') !== null ? q.get('textures') : (wantHigh ? '1' : (potato ? '0' : '1'));
 
 	const OPTIMIZED_ARGS = [
 		'-textureQuality=' + textVal,
-		'-pedVariety=0',
-		'-vehicleVariety=0',
+		'-pedVariety=' + (potato ? '0' : '1'),
+		'-vehicleVariety=' + (potato ? '0' : '1'),
 		'-shadowQuality=' + shadowVal,
-		'-reflectionQuality=0',
-		'-particleQuality=0',
-		'-grassQuality=0',
-		'-cityDensity=' + (wantHigh ? '1' : '0'),
+		'-reflectionQuality=' + (potato ? '0' : '1'),
+		'-particleQuality=' + (potato ? '0' : '1'),
+		'-grassQuality=' + (potato ? '0' : '1'),
+		'-cityDensity=' + (wantHigh ? '1' : (potato ? '0' : '1')),
 		'-lodScale=1',          // CRITICAL: Must be >= 1 so building interiors and door triggers stream in
 		'-pedLodBias=0',
 		'-vehicleLodBias=0',
 		'-waterQuality=0',
 		'-postFX=1',             // CRITICAL: Must be >= 1 for tone mapping, Scaleform HUD, and radar composite
-		'-tessellation=0',
+		'-tessellation=' + (potato ? '0' : '1'),
 		'-motionBlurQuality=0',
-		'-fxaa=0',
+		'-fxaa=' + (potato ? '0' : '1'),
 		'-dof=0',
-		'-ssao=0',
-		'-anisotropicQualityLevel=0'
+		'-ssao=' + (potato ? '0' : '1'),
+		'-anisotropicQualityLevel=' + (potato ? '0' : '4')
 	];
 
 	// Multi-core thread allocation:
-	// 2 worker pool pthreads + 1 main wasm thread + 1 GPU thread = 4 threads (perfect 1:1 fit for 4-core Intel N97)
-	const cores = +(q.get('cores') || 0) || (wantHigh ? 4 : 2);
+	// Normal/high default: 4 threads (2 worker pool pthreads + 1 main wasm thread + 1 GPU thread).
+	// Potato tier: 2 threads on low-end hardware (4-core Intel N97 sweet spot).
+	const cores = +(q.get('cores') || 0) || (potato ? 2 : 4);
 
 	const storedScale = parseFloat(localStorage.getItem('gt_renderScale'));
-	let renderScale = (storedScale && storedScale >= 0.25 && storedScale <= 1.5) ? storedScale : (wantHigh ? 0.70 : 0.48);
+	let renderScale = (storedScale && storedScale >= 0.25 && storedScale <= 1.5) ? storedScale : (wantHigh ? 0.70 : (potato ? 0.48 : 0.60));
 
 	wantSize = () => {
 		if (q.get('mode') === 'chromebook') return [910, 570];
