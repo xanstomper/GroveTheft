@@ -173,3 +173,28 @@ This is a private research/archival project. Engine binaries and game content re
 ## License
 
 Code authored for this project (server, tooling, optimizations): MIT. Bundled engine binaries and game content: **all rights reserved by their respective owners** — included for private research only.
+
+---
+
+## How game content works (engine vs. assets)
+
+This repo ships the **engine** (~216 MB: wasm, shaders, loader, tooling). The game
+assets — map, models, textures, audio (~21 GB) — are **not** in the repo. They
+stream on-demand over HTTP Range requests from the content origin through your
+local server, and are cached in `data_mirror/` as you play.
+
+| Path | What happens |
+|---|---|
+| You click PLAY | Engine streams only what the current scene needs — a few hundred MB for the first load, then cached |
+| `data_mirror/` grows | Every streamed file is saved to disk; second launch is near-instant and fully offline |
+| Want it all upfront? | `python3 prefetch.py all` mirrors the complete content set (~21 GB) |
+
+This is the same content-delivery model the original port uses: the forkable
+part (this repo) is engine + tooling; the copyrighted assets stay at the origin,
+fetched live by your own local server. Nothing is bundled, nothing is redistributed.
+
+## Requirements
+
+- Python 3.8+ (stdlib only — no pip installs)
+- A WebGPU browser: Chrome/Edge 113+, Brave, or any Chromium from 2023+
+- ~2 GB disk for a typical cached session; ~21 GB for a full mirror
