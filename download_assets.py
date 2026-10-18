@@ -55,8 +55,8 @@ def main():
     tasks.append((BASE + "/title/logo.png", os.path.join(OUT, "title/logo.png")))
     tasks.append((BASE + "/title/spinner.png", os.path.join(OUT, "title/spinner.png")))
     import re
-    html = open(os.path.join(OUT, "index.html"), "rb").read().decode("utf-8", "replace") if os.path.exists(os.path.join(OUT, "index.html")) else ""
-    art_names = set(re.findall(r"art/ls([0-9]+)_([a-z0-9_]+)\.webp", open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")).read()))
+    html = open(os.path.join(OUT, "index.html"), "rb").read().decode("utf-8", "replace")
+    art_names = set(re.findall(r"art/ls([0-9]+)_([a-z0-9_]+)\.webp", html))
     if not art_names:
         # fallback known set
         art_names = {(n, n2) for n in range(17) for n2 in ["background", "foreground", "foreground_franklin", "foreground_chop", "foreground_michael", "foreground_car"]}
