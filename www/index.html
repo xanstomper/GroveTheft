@@ -1,0 +1,1262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GroveTheft — GTA V Browser Port</title>
+<style>
+	* { box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+	html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #08090a; color: #d0d4dc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; }
+	#canvas { display: block; position: absolute; left: 0; top: 0; width: 100vw; height: 100vh; background: #000; outline: none; }
+
+	/* ---- GroveTheft Luxury Welcome Portal ---- */
+	#portal {
+		position: fixed; inset: 0; z-index: 100;
+		background: #090a0d;
+		display: flex; flex-direction: column; align-items: center; justify-content: center;
+		padding: 20px;
+	}
+	#portal.leaving { display: none !important; }
+
+	.portal-card {
+		width: 100%; max-width: 660px;
+		background: #111319;
+		border: 1px solid #1f242e;
+		border-radius: 8px;
+		padding: 28px 32px 24px;
+		display: flex; flex-direction: column; align-items: center;
+	}
+
+	.portal-logo-wrap {
+		display: flex; align-items: center; justify-content: center;
+		margin-bottom: 12px;
+	}
+	.portal-logo {
+		width: 170px; height: auto; max-height: 80px;
+		object-fit: contain;
+	}
+
+	.portal-title {
+		font-size: 24px; font-weight: 900; letter-spacing: 2px;
+		text-transform: uppercase; color: #f4f6fa; margin: 0 0 4px;
+		text-align: center;
+	}
+	.portal-title span { color: #f5c45e; }
+
+	.portal-desc {
+		font-size: 12px; font-weight: 400; color: #88909f;
+		text-align: center; line-height: 1.45; margin: 0 0 16px;
+		max-width: 500px;
+	}
+
+	.badges-row {
+		display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+		margin-bottom: 16px;
+	}
+	.badge {
+		font-size: 10px; font-weight: 700; letter-spacing: 0.6px;
+		text-transform: uppercase; padding: 4px 8px;
+		border-radius: 3px; background: #161920;
+		color: #8c95a5; border: 1px solid #232834;
+	}
+	.badge.green { color: #22c55e; border-color: rgba(34, 197, 94, 0.3); background: rgba(34, 197, 94, 0.08); }
+	.badge.gold { color: #f5c45e; border-color: rgba(245, 196, 94, 0.3); background: rgba(245, 196, 94, 0.08); }
+
+	.portal-gamepad-bar {
+		width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+		padding: 8px 12px; border-radius: 4px;
+		background: #14171e; border: 1px solid #202530;
+		margin-bottom: 16px; font-size: 11px; font-weight: 600; color: #949eb0;
+	}
+	.portal-gamepad-bar.active { border-color: rgba(34, 197, 94, 0.4); background: rgba(34, 197, 94, 0.06); color: #22c55e; }
+	.portal-gamepad-bar .dot {
+		width: 7px; height: 7px; border-radius: 50%; background: #64748b;
+	}
+	.portal-gamepad-bar.active .dot { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+
+	.modes-label {
+		font-size: 10px; font-weight: 800; text-transform: uppercase;
+		letter-spacing: 1px; color: #6d7687; margin-bottom: 8px;
+		width: 100%; text-align: left;
+	}
+	.mode-select-grid {
+		display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+		width: 100%; margin-bottom: 18px;
+	}
+	.mode-card {
+		background: #14171f; border: 1px solid #232834;
+		border-radius: 6px; padding: 12px 10px;
+		cursor: pointer; display: flex; flex-direction: column; align-items: center;
+		text-align: center;
+	}
+	.mode-card:hover { border-color: #f5c45e; background: #181c25; }
+	.mode-card.active {
+		border-color: #f5c45e;
+		background: #1c1912;
+		box-shadow: 0 0 0 1px #f5c45e;
+	}
+	.mode-num {
+		font-size: 9px; font-weight: 800; color: #646d7e;
+		margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px;
+	}
+	.mode-card.active .mode-num { color: #f5c45e; }
+	.mode-name {
+		font-size: 12px; font-weight: 700; color: #d6dae3;
+		letter-spacing: 0.5px; margin-bottom: 2px;
+	}
+	.mode-card.active .mode-name { color: #fff; }
+	.mode-sub {
+		font-size: 10px; color: #6f7786; line-height: 1.25;
+	}
+
+	.btn-play {
+		width: 100%; height: 48px;
+		background: #f5c45e; color: #090a0d;
+		border: none; border-radius: 6px;
+		font-size: 13px; font-weight: 800; letter-spacing: 1.5px;
+		text-transform: uppercase; cursor: pointer;
+		display: flex; align-items: center; justify-content: center; gap: 10px;
+	}
+	.btn-play:hover { background: #ffd272; }
+	.btn-play:active { background: #e5b044; }
+
+	.btn-key-hint {
+		font-size: 10px; font-weight: 800; color: #090a0d;
+		background: rgba(0, 0, 0, 0.15); padding: 3px 6px;
+		border-radius: 3px; letter-spacing: 0.5px;
+	}
+
+	.controls-legend {
+		margin-top: 14px; width: 100%;
+		display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 12px;
+		font-size: 10px; color: #677080;
+	}
+	.controls-legend span { color: #8e97a7; font-weight: 600; }
+
+	/* ---- Engine Loading Screen (Scaleform clone) ---- */
+	#loading {
+		position: fixed; inset: 0; background: #000; overflow: hidden;
+		transition: opacity 0.8s ease; z-index: 50;
+	}
+	#loading.done { opacity: 0; pointer-events: none; }
+	#ls-stage {
+		position: absolute; left: 0; top: 0; width: 1280px; height: 720px;
+		transform-origin: 0 0; overflow: hidden; font-family: -apple-system, sans-serif; color: #fff;
+	}
+	#ls-screens, .ls-screen { position: absolute; inset: 0; }
+	.ls-cam { position: absolute; inset: 0; perspective: 1229px; perspective-origin: 640px 360px; }
+	.ls-layer { position: absolute; left: 0; top: 0; transform-origin: 0 0; background-size: 100% 100%; }
+	#ls-logo { position: absolute; left: 95px; top: 492.5px; width: 186px; height: 186px; }
+	#ls-bars { position: absolute; right: 96px; top: 642px; display: flex; gap: 3px; }
+	.ls-bar {
+		height: 24px; padding: 0 8px; display: flex; align-items: center;
+		background: rgba(0, 0, 0, 0.75); border-radius: 3px; white-space: nowrap; font-size: 11px;
+	}
+	#modes { gap: 8px; }
+	#modes button {
+		display: flex; align-items: center; height: 24px; padding: 0;
+		border: 0; background: none; color: #fff; font-size: 11px; font-weight: 600; cursor: pointer;
+	}
+	#modes button:disabled { cursor: default; }
+	#modes button[hidden] { display: none; }
+	.ls-key {
+		margin-left: 6px; min-width: 14px; height: 16px; padding: 0 5px;
+		line-height: 16px; border-radius: 2px; background: #fff; color: #000;
+		font-size: 10px; font-weight: 700; text-transform: uppercase;
+	}
+	.ls-spin {
+		flex: none; width: 18px; height: 18px; margin-left: 6px;
+		border: 2px solid rgba(255, 255, 255, 0.2);
+		border-top-color: #4ade80; border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+	@keyframes spin { to { transform: rotate(360deg); } }
+	#label { font-size: 11px; font-weight: 500; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+	#pct { margin-left: 12px; font-weight: 700; font-variant-numeric: tabular-nums; color: #4ade80; }
+
+	#ls-log {
+		position: absolute; left: 8px; right: 8px; bottom: 6px;
+		display: flex; flex-direction: column; align-items: center;
+		font: 10px/1.35 Consolas, monospace; color: rgba(190, 190, 190, 0.75);
+		text-shadow: 1px 1px 1px #000; white-space: pre; pointer-events: none;
+	}
+	#console { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+	#data { color: #4ade80; }
+	#bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, 0.08); }
+	#fill { height: 100%; width: 0; background: #4ade80; transition: width 0.15s ease; }
+
+	/* In-Game HUD Overlays */
+	#hud { position: fixed; left: 12px; bottom: 12px; max-width: 60vw; white-space: pre-wrap; font-size: 12px; color: #ccc; pointer-events: none; z-index: 10; text-shadow: 1px 1px 2px #000; }
+	#fps { position: fixed; left: 12px; top: 10px; display: none; color: #4ade80; font: bold 16px/1.2 Consolas, monospace; font-variant-numeric: tabular-nums; text-shadow: 1px 1px 2px #000; pointer-events: none; z-index: 20; }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="800" height="600" tabindex="-1"></canvas>
+<div id="hud"></div>
+<div id="fps"></div>
+
+<!-- GroveTheft Luxury Welcome Portal -->
+<div id="portal">
+	<div class="portal-card">
+		<div class="portal-logo-wrap">
+			<img src="title/grovetheft_logo.png" alt="GroveTheft" class="portal-logo" onerror="this.src='title/logo.png'">
+		</div>
+		<div class="portal-title">GroveTheft <span>V</span></div>
+		<div class="portal-desc">Grand Theft Auto V Native WebGPU Engine. Zero malware, zero adware, full interiors, functional radar, and native gamepad support.</div>
+
+		<div class="badges-row">
+			<div class="badge green">Locked 60 FPS Target</div>
+			<div class="badge gold">Xbox One / PS5 / PS4 Ready</div>
+			<div class="badge">Building Interiors Active</div>
+			<div class="badge">Scaleform Radar Active</div>
+			<div class="badge">Zero Bloat / No Ads</div>
+		</div>
+
+		<div id="portal-gamepad-bar" class="portal-gamepad-bar">
+			<span class="dot"></span>
+			<span id="portal-gamepad-text">Checking for controllers... Connect Xbox One, PS5, PS4 or USB Gamepad</span>
+		</div>
+
+		<div class="modes-label">Select Play Mode</div>
+		<div class="mode-select-grid" role="tablist">
+			<div class="mode-card active" id="tab-story" role="tab" aria-selected="true" tabindex="0">
+				<div class="mode-num">Mode 01</div>
+				<div class="mode-name">Story Mode</div>
+				<div class="mode-sub">Prologue &amp; Campaign</div>
+			</div>
+			<div class="mode-card" id="tab-map5" role="tab" aria-selected="false" tabindex="0">
+				<div class="mode-num">Mode 02</div>
+				<div class="mode-name">GTA V Sandbox</div>
+				<div class="mode-sub">Los Santos Free Roam</div>
+			</div>
+			<div class="mode-card" id="tab-map6" role="tab" aria-selected="false" tabindex="0">
+				<div class="mode-num">Mode 03</div>
+				<div class="mode-name">GTA VI Sandbox</div>
+				<div class="mode-sub">Vice City Playground</div>
+			</div>
+		</div>
+
+		<button class="btn-play" id="btn-play" type="button">
+			<span>Start Playing</span>
+			<span class="btn-key-hint">ENTER / A</span>
+		</button>
+
+		<div class="controls-legend">
+			<div><span>Walk / Steer:</span> WASD / L-Stick</div>
+			<div><span>Look:</span> Mouse / R-Stick</div>
+			<div><span>Sprint:</span> Shift / A (Cross)</div>
+			<div><span>Aim / Fire:</span> LT + RT / Mouse</div>
+			<div><span>Enter Car:</span> F / Y</div>
+			<div><span>Interact / Door:</span> E / D-Pad Right</div>
+			<div><span>Radar Zoom:</span> Z / D-Pad Down</div>
+			<div><span>Weapon Wheel:</span> Tab / LB</div>
+			<div><span>FPS Counter:</span> = Key</div>
+		</div>
+	</div>
+</div>
+
+<!-- Scaleform Title Loading Screen -->
+<div id="loading">
+	<div id="ls-stage">
+		<div id="ls-screens"></div>
+		<img id="ls-logo" src="title/logo.png" alt="Grand Theft Auto V">
+		<div id="ls-bars">
+			<div id="modes" class="ls-bar">
+				<button data-act="back"></button>
+				<button data-act="map5"></button>
+				<button data-act="map6"></button>
+				<button data-act="sandbox"></button>
+				<button data-act="story"></button>
+			</div>
+			<div class="ls-bar">
+				<span id="label">Starting GroveTheft...</span>
+				<span id="pct">0%</span>
+				<i class="ls-spin"></i>
+			</div>
+		</div>
+	</div>
+	<div id="ls-log">
+		<div id="data"></div>
+		<div id="console"></div>
+	</div>
+	<div id="bar"><div id="fill"></div></div>
+</div>
+
+<script type="module">
+const q = new URLSearchParams(location.search);
+const BASE = '';
+const remoteLog = q.get('log') === '1';
+const postLog = (text) => { if (remoteLog) fetch('/log', { method: 'POST', body: text }).catch(() => {}); };
+
+// ---- Controller Model Identification ----
+const padLabel = (s) => {
+	s = (s || '').toLowerCase();
+	if (/dualsense|054c.*0ce6|054c.*0df2/.test(s)) return 'PlayStation 5 DualSense';
+	if (/dualshock|054c.*05c4|054c.*09cc/.test(s)) return 'PlayStation 4 DualShock';
+	if (/xbox|x-input|045e/.test(s)) return 'Xbox Wireless Controller';
+	if (/switch|057e/.test(s)) return 'Nintendo Switch Pro Controller';
+	return 'USB / Bluetooth Gamepad';
+};
+
+// ---- GroveTheft Portal Interaction & Controller Engine Gate ----
+let engineLaunched = false;
+let portalActive = true;
+let selectedPortalMode = q.get('mode') === 'sandbox' ? (q.get('map') === 'env_test' ? 3 : 2) : 1;
+
+function selectPortalMode(modeNum) {
+	selectedPortalMode = modeNum;
+	const storyTab = document.getElementById('tab-story');
+	const map5Tab = document.getElementById('tab-map5');
+	const map6Tab = document.getElementById('tab-map6');
+	if (storyTab) {
+		storyTab.classList.toggle('active', modeNum === 1);
+		storyTab.setAttribute('aria-selected', modeNum === 1 ? 'true' : 'false');
+	}
+	if (map5Tab) {
+		map5Tab.classList.toggle('active', modeNum === 2);
+		map5Tab.setAttribute('aria-selected', modeNum === 2 ? 'true' : 'false');
+	}
+	if (map6Tab) {
+		map6Tab.classList.toggle('active', modeNum === 3);
+		map6Tab.setAttribute('aria-selected', modeNum === 3 ? 'true' : 'false');
+	}
+	startMode = modeNum;
+	if (startModeWord) Atomics.store(startModeWord, 0, modeNum);
+	if (typeof showModes === 'function') showModes();
+}
+
+function triggerPlay() {
+	if (!portalActive) return;
+	portalActive = false;
+	audioGesture = true;
+	unlockAudioContext();
+	tryStartAudio();
+	const portal = document.getElementById('portal');
+	if (portal) portal.style.display = 'none';
+	if (typeof startTitle === 'function') startTitle();
+	launchGameEngine();
+}
+
+// Portal click & keyboard bindings
+{
+	const btnPlay = document.getElementById('btn-play');
+	if (btnPlay) btnPlay.addEventListener('click', triggerPlay);
+
+	const storyTab = document.getElementById('tab-story');
+	const map5Tab = document.getElementById('tab-map5');
+	const map6Tab = document.getElementById('tab-map6');
+	if (storyTab) storyTab.addEventListener('click', () => selectPortalMode(1));
+	if (map5Tab) map5Tab.addEventListener('click', () => selectPortalMode(2));
+	if (map6Tab) map6Tab.addEventListener('click', () => selectPortalMode(3));
+
+	addEventListener('keydown', (e) => {
+		if (!portalActive) return;
+		if (e.code === 'Enter' || e.code === 'NumpadEnter') {
+			e.preventDefault(); e.stopImmediatePropagation();
+			triggerPlay();
+		} else if (e.code === 'Digit1') {
+			selectPortalMode(1);
+		} else if (e.code === 'Digit2') {
+			selectPortalMode(2);
+		} else if (e.code === 'Digit3') {
+			selectPortalMode(3);
+		}
+	}, { capture: true });
+
+	// Portal gamepad controller navigation
+	let portalPadPrev = 0;
+	function pollPortalGamepad() {
+		if (!portalActive) return;
+		const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+		let activePad = null;
+		for (const p of pads) {
+			if (p && p.connected) { activePad = p; break; }
+		}
+		const gpBar = document.getElementById('portal-gamepad-bar');
+		const gpText = document.getElementById('portal-gamepad-text');
+		if (activePad) {
+			const label = padLabel(activePad.id);
+			if (gpBar && !gpBar.classList.contains('active')) gpBar.classList.add('active');
+			if (gpText) gpText.textContent = label + ' Connected — (D-Pad) Switch Mode | (A / Options) Start Playing';
+
+			const b = activePad.buttons || [];
+			const btn = (i) => !!(b[i] && (b[i].pressed || b[i].value > 0.4));
+			const ax = activePad.axes || [];
+			let mask = 0;
+			if (btn(0)) mask |= 1;   // A / Cross (Confirm / Play)
+			if (btn(9)) mask |= 2;   // Start / Options (Confirm / Play)
+			if (btn(14) || btn(4) || (ax[0] && ax[0] < -0.5)) mask |= 4;  // Left / LB (Prev Mode)
+			if (btn(15) || btn(5) || (ax[0] && ax[0] > 0.5)) mask |= 8;   // Right / RB (Next Mode)
+
+			const pressed = mask & ~portalPadPrev;
+			portalPadPrev = mask;
+
+			if (pressed & 1 || pressed & 2) {
+				triggerPlay();
+				return;
+			}
+			if (pressed & 4) {
+				const next = selectedPortalMode === 1 ? 3 : selectedPortalMode - 1;
+				selectPortalMode(next);
+			} else if (pressed & 8) {
+				const next = selectedPortalMode === 3 ? 1 : selectedPortalMode + 1;
+				selectPortalMode(next);
+			}
+		} else {
+			if (gpBar && gpBar.classList.contains('active')) gpBar.classList.remove('active');
+			if (gpText && !gpText.textContent.includes('Keyboard & Mouse Ready')) {
+				gpText.textContent = 'Keyboard & Mouse Ready • Connect Xbox One, PS5, PS4 or USB Gamepad';
+			}
+			portalPadPrev = 0;
+		}
+		requestAnimationFrame(pollPortalGamepad);
+	}
+	requestAnimationFrame(pollPortalGamepad);
+	addEventListener('gamepadconnected', () => { pollPortalGamepad(); });
+}
+
+// Crash reporting
+{
+	let posted = 0;
+	new BroadcastChannel('game-crash').onmessage = (ev) => {
+		const m = ev.data;
+		const memory = /memory|OOM|Aborted\(|RangeError|grow/i.test(m.text);
+		const dev = ' deviceMemory ' + (navigator.deviceMemory || '?') + ' GB, cores ' + navigator.hardwareConcurrency;
+		if (remoteLog && posted++ < 3) fetch('/log', { method: 'POST', body: '[page] CRASH (' + m.kind + ', ' + m.thread + ' thread, wasm heap ' + m.heap + ' MB,' + dev + ', ' + location.search + '): ' + m.text + '\n' + m.tail.join('\n') + '\n' }).catch(() => {});
+		const el = document.getElementById('hud');
+		if (el) { el.textContent = 'The game stopped (' + m.kind + '): ' + m.text.split('\n')[0].slice(0, 200) + (memory ? ' - this looks like a lack of memory: close other tabs and reload.' : ' - reload the page.'); el.style.color = '#f96'; }
+	};
+}
+
+// ---- Title Screen: LOADINGSCREEN_STARTUP in HTML ----
+let stopTitle = () => {};
+{
+	const stage = document.getElementById('ls-stage'), holder = document.getElementById('ls-screens');
+	const fit = () => {
+		const s = Math.min(innerWidth / 1280, innerHeight / 720);
+		stage.style.transform = 'translate(' + (innerWidth - 1280 * s) / 2 + 'px,' + (innerHeight - 720 * s) / 2 + 'px) scale(' + s + ')';
+	};
+	fit();
+	addEventListener('resize', fit);
+	const L = (tex, w, h, x, y, yr, to) => ({ tex, w, h, x, y, yr, to });
+	const BG = (n, yr, to, x = 98) => L('ls' + n + '_background', 1024, 512, x, 95, yr, to);
+	const FG = (n, name, w, h, x, y, toX, yr = 0) => L('ls' + n + '_' + name, w, h, x, y, yr, { x: toX });
+	const SCREENS = [
+		[L('beach_bg', 1024, 512, 98, 95, 20, { yr: -6, xr: 5 }), L('beach_fg', 343, 629, 480, 95, 0, { x: 720 })],
+		null,
+		[BG(0, 7, { yr: -7 }), FG(0, 'foreground', 299, 599, 360, 140, 560, 7)],
+		[BG(1, 6, { yr: -12 }), FG(1, 'foreground', 503, 206, 300, 465, 480), FG(1, 'foreground_franklin', 368, 588, 440, 140, 745)],
+		[BG(2, 7, { yr: -5, xr: 5 }), FG(2, 'foreground', 311, 558, 745, 200, 450), FG(2, 'foreground_chop', 320, 512, 640, 260, 310)],
+		[BG(3, 12, { yr: -4 }, 110), FG(3, 'foreground', 412, 609, 440, 120, 730)],
+		[BG(4, 7, { yr: -4, xr: 5 }), FG(4, 'foreground', 251, 643, 400, 85, 250)],
+		[BG(5, 7, { yr: -6 }), FG(5, 'foreground', 389, 640, 450, 95, 700)],
+		[BG(6, 7, { yr: 0, xr: 5 }), FG(6, 'foreground', 367, 603, 410, 115, 800)],
+		[BG(7, 6, { yr: -6, xr: 5 }), FG(7, 'foreground', 311, 625, 860, 95, 520)],
+		[BG(8, 7, { yr: -5, xr: 5 }), FG(8, 'foreground', 492, 497, 400, 190, 660)],
+		[BG(9, 7, { yr: -3, xr: 5 }), FG(9, 'foreground', 331, 675, 220, 50, 140)],
+		[BG(10, 6, { yr: -5, xr: 5 }), FG(10, 'foreground', 352, 682, 545, 65, 485)],
+		[BG(11, 7, { yr: -3, xr: 5 }), FG(11, 'foreground', 344, 669, 309, 51, 424)],
+		[BG(12, 6, { yr: -4 }), FG(12, 'foreground_michael', 462, 677, 345, 42, 220)],
+		[BG(13, 5, { yr: -6, xr: 5 }), FG(13, 'foreground', 399, 681, 430, 39, 250)],
+		[BG(14, 6, { yr: -2, xr: 5 }), FG(14, 'foreground', 392, 631, 650, 95, 850)],
+		[BG(15, 6, { yr: -3, xr: 5 }), FG(15, 'foreground', 385, 642, 404, 78, 261)],
+		[BG(16, 6, { yr: -3, xr: 5 }), FG(16, 'foreground', 300, 600, 300, 150, 400)],
+	];
+	const ORDERS = [[0, 16, 18, 3, 12, 2, 17, 10, 9, 8, 15, 6, 11, 14, 4, 7, 13], [0, 4, 6, 17, 11, 16, 18, 7, 9, 15, 3, 14, 10, 13, 2, 8, 12],
+		[0, 7, 16, 14, 13, 3, 10, 2, 15, 18, 8, 9, 4, 17, 12, 6, 11], [0, 8, 18, 9, 13, 4, 11, 14, 7, 17, 6, 12, 3, 16, 2, 15, 10],
+		[0, 11, 12, 7, 18, 14, 9, 13, 4, 2, 15, 11, 8, 16, 6, 3, 17], [0, 10, 16, 2, 13, 17, 8, 9, 18, 3, 12, 6, 7, 4, 14, 15, 10]];
+	const order = ORDERS[Math.floor(Math.random() * ORDERS.length)];
+	const cubicInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(2 - 2 * t, 3) / 2);
+	const slide = (s, x) => {
+		s.el.style.transform = 'translateX(' + x + 'px)';
+		for (const c of s.cams) c.style.perspectiveOrigin = (640 - x) + 'px 360px';
+	};
+	const place = (l, x, yr, xr) => { l.el.style.transform = 'translate3d(' + x + 'px,' + l.y + 'px,0) rotateY(' + -yr + 'deg) rotateX(' + -xr + 'deg)'; };
+	const prepare = (i) => {
+		const layers = SCREENS[order[i]].map((d) => ({ ...d, img: Object.assign(new Image(), { src: BASE + '/title/art/' + d.tex + '.webp' }) }));
+		return Promise.all(layers.map((l) => l.img.decode().catch(() => {}))).then(() => layers);
+	};
+	let active = null, leaving = null, index = 0, alt = -1, timer = 0, raf = 0, stopped = false;
+	const show = (defs) => {
+		const now = performance.now();
+		alt = alt <= 0 ? 1 : -1;
+		const el = document.createElement('div');
+		el.className = 'ls-screen';
+		const cams = [];
+		const s = { el, slideFrom: alt * 1280, start: now, settled: 0, cams, layers: defs.map((d) => {
+			const cam = document.createElement('div'), e = document.createElement('div');
+			cam.className = 'ls-cam';
+			e.className = 'ls-layer';
+			e.style.width = d.w + 'px'; e.style.height = d.h + 'px';
+			e.style.backgroundImage = 'url(' + d.img.src + ')';
+			cam.appendChild(e);
+			el.appendChild(cam);
+			cams.push(cam);
+			return { el: e, y: d.y, x0: d.x, yr0: d.yr, xr0: 0, x1: d.to.x ?? d.x, yr1: d.to.yr ?? d.yr, xr1: d.to.xr ?? 0 };
+		}) };
+		for (const l of s.layers) place(l, l.x0, l.yr0, l.xr0);
+		slide(s, s.slideFrom);
+		holder.appendChild(el);
+		if (leaving) leaving.el.remove();
+		leaving = active;
+		if (leaving) { leaving.slideFrom = 0; leaving.slideTo = -alt * 1280; leaving.start = now; }
+		active = s;
+		s.slideTo = 0;
+	};
+	const tick = (now) => {
+		for (const s of [leaving, active]) {
+			if (!s) continue;
+			const p = Math.min(1, (now - s.start) / 850);
+			if (p < 1 || !s.slid) { slide(s, s.slideFrom + (s.slideTo - s.slideFrom) * cubicInOut(p)); s.slid = p === 1; }
+			if (s === active && p === 1 && !s.settled) s.settled = now;
+			if (s.settled) {
+				const q = Math.min(1, (now - s.settled) / 42000);
+				for (const l of s.layers) place(l, l.x0 + (l.x1 - l.x0) * q, l.yr0 + (l.yr1 - l.yr0) * q, l.xr0 + (l.xr1 - l.xr0) * q);
+			}
+			if (s === leaving && p === 1) { s.el.remove(); leaving = null; }
+		}
+		if (!stopped) raf = requestAnimationFrame(tick);
+	};
+	let next = null;
+	const cycle = () => next.then((defs) => {
+		if (stopped) return;
+		show(defs);
+		index = (index + 1) % order.length;
+		next = prepare(index);
+		timer = setTimeout(cycle, 14000);
+	});
+	let titleStarted = false;
+	window.startTitle = () => {
+		if (titleStarted) return;
+		titleStarted = true;
+		next = prepare(0);
+		timer = setTimeout(cycle, 500);
+		raf = requestAnimationFrame(tick);
+	};
+	stopTitle = () => { stopped = true; clearTimeout(timer); cancelAnimationFrame(raf); };
+}
+
+// Mode Selection Buttons (In Loading Bar)
+let startMode = q.get('mode') === 'story' ? 1 : q.get('mode') === 'sandbox' ? (q.get('map') === 'env_test' ? 3 : 2) : 1;
+let startModeWord = null, startCommitted = false, pickingMap = false, waitingChoice = false;
+const ACTS = {
+	back: ['Back', 'Backspace', ['Backspace']],
+	map5: ['GTA V Map', '5', ['Digit5', 'Numpad5']],
+	map6: ['GTA VI Map', '6', ['Digit6', 'Numpad6']],
+	sandbox: ['Sandbox Mode', 'Space', ['Space']],
+	story: ['Story Mode', 'Enter', ['Enter', 'NumpadEnter']],
+};
+const LOADING = { 1: 'Loading Story Mode', 2: 'Loading Sandbox Mode: GTA V Map', 3: 'Loading Sandbox Mode: GTA VI Map' };
+const modesEl = document.getElementById('modes'), modeButtons = [...modesEl.querySelectorAll('button')];
+const isMode = (act) => act === 'story' || act === 'sandbox';
+const showModes = () => {
+	for (const b of modeButtons) {
+		const act = b.dataset.act, loading = !pickingMap && (act === 'story' ? startMode === 1 : act === 'sandbox' && startMode >= 2);
+		const text = document.createElement('span'), icon = document.createElement(loading ? 'i' : 'span');
+		text.textContent = loading ? LOADING[startMode] : ACTS[act][0];
+		icon.className = loading ? 'ls-spin' : 'ls-key';
+		icon.textContent = loading ? '' : ACTS[act][1];
+		b.replaceChildren(text, icon);
+		b.style.order = loading ? 1 : 0;
+		b.disabled = startCommitted;
+		b.hidden = startCommitted ? !loading : pickingMap === isMode(act);
+		b.classList.toggle('chosen', loading);
+	}
+	if (startMode) modesEl.classList.remove('ask');
+	if (waitingChoice && !startMode) document.getElementById('label').textContent = pickingMap ? 'Choose a map to continue' : 'Choose Story Mode or Sandbox Mode to continue';
+};
+const choose = (m) => {
+	pickingMap = false;
+	if (m !== startMode) {
+		startMode = m;
+		if (startModeWord) Atomics.store(startModeWord, 0, m);
+		postLog('[page] start mode: ' + ({ 1: 'story', 2: 'sandbox', 3: 'sandbox on env_test' })[m]);
+	}
+	showModes();
+};
+const act = (a) => {
+	if (startCommitted) return;
+	if (a === 'story') choose(1);
+	else if (a === 'map5') choose(2);
+	else if (a === 'map6') choose(3);
+	else { pickingMap = a === 'sandbox'; showModes(); }
+};
+modesEl.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && !b.hidden) act(b.dataset.act); });
+addEventListener('keydown', (e) => {
+	if (startCommitted || e.ctrlKey || e.altKey || e.metaKey || !document.getElementById('loading')) return;
+	const b = modeButtons.find((x) => !x.hidden && ACTS[x.dataset.act][2].includes(e.code));
+	if (!b) return;
+	act(b.dataset.act);
+	e.preventDefault(); e.stopImmediatePropagation();
+}, { capture: true });
+showModes();
+
+// Loading progress listener
+{
+	const fill = document.getElementById('fill'), label = document.getElementById('label'), pct = document.getElementById('pct'), loading = document.getElementById('loading'), hud = document.getElementById('hud');
+	let lastLabel = '', target = 0, current = 0, ready = false, loadingGone = false, dirty = false;
+	let lastLine = '', dataBytes = 0, stallLogged = 0, lastActivity = performance.now();
+	const samples = [];
+	let worldBase = -1;
+	new BroadcastChannel('game-progress').onmessage = (ev) => {
+		const m = ev.data;
+		lastActivity = performance.now();
+		if (m.dl) { dataBytes += m.dl; samples.push([performance.now(), m.dl]); return; }
+		if (m.lines) { if (loadingGone || !m.lines.length) return; lastLine = m.lines[m.lines.length - 1]; dirty = true; return; }
+		if (m.gpuLost) {
+			// GroveTheft auto-recovery: instead of leaving a dead black screen, show a
+			// notice and soft-restart the page (wasm + shaders are cached & immutable,
+			// so this is a quick reconnect, not a full re-download).
+			hud.textContent = 'Graphics device lost (' + m.gpuLost + ') — restarting the renderer…';
+			hud.style.color = '#f66';
+			try { sessionStorage.setItem('gt-autorestart', String(Date.now())); } catch (err) {}
+			setTimeout(() => { location.reload(); }, 1500);
+			return;
+		}
+		if (m.error) { label.textContent = m.error; label.style.color = '#e66'; return; }
+		if (m.pct > target) { target = m.pct; if (m.label) { lastLabel = m.label; if (!waitingChoice) label.textContent = m.label; } if (m.pct >= 72 && worldBase < 0) worldBase = dataBytes; }
+		if (m.choice && !startMode) { waitingChoice = true; modesEl.classList.add('ask'); showModes(); }
+		if (m.commit) { startCommitted = true; pickingMap = false; if (m.mode) startMode = m.mode; showModes(); }
+		if (m.compiling !== undefined && !waitingChoice) { label.textContent = lastLabel = 'Preparing shaders'; target = Math.max(target, 99); }
+		if (m.world) {
+			ready = true;
+			hud.style.color = '#4ade80';
+			hud.textContent = 'GroveTheft Loaded — FPS: = | Resolution: - / + | Sens: [ / ] | Interact: E';
+			setTimeout(() => { if (hud.textContent.includes('GroveTheft Loaded')) hud.textContent = ''; }, 12000);
+		}
+	};
+	const dataEl = document.getElementById('data');
+	const WORLD_BYTES = 1.2e9;
+	setInterval(() => {
+		if (ready) return;
+		if (waitingChoice) { if (!startMode) { lastActivity = performance.now(); return; } waitingChoice = false; label.textContent = lastLabel; }
+		const quiet = (performance.now() - lastActivity) / 1000;
+		if (quiet > 30) { label.textContent = 'No progress for ' + (quiet | 0) + ' s (last step: ' + (lastLabel || '-') + '): please wait or reload.'; label.style.color = '#e96'; }
+		else if (stallLogged) { stallLogged = 0; label.style.color = ''; }
+	}, 2000);
+	const progressTimer = setInterval(() => {
+		if (ready) {
+			current = 100; fill.style.width = '100%'; pct.textContent = '100%';
+			clearInterval(progressTimer);
+			setTimeout(() => { loading.classList.add('done'); stopTitle(); setTimeout(() => { loading.remove(); loadingGone = true; }, 1000); }, 500);
+			return;
+		}
+		if (target > 72 && current >= 72 && worldBase >= 0) {
+			const done = Math.max(0, dataBytes - worldBase);
+			const p = 72 + 27 * Math.min(1, done / WORLD_BYTES);
+			if (p > target) target = p;
+		}
+		if (current < target) {
+			current += Math.min(target - current, Math.max(0.08, (target - current) * 0.15));
+			fill.style.width = current.toFixed(1) + '%';
+			pct.textContent = (current | 0) + '%';
+		}
+		if (dirty) {
+			dirty = false;
+			const el = document.getElementById('console');
+			if (el) el.textContent = lastLine;
+		}
+	}, 50);
+}
+
+// FPS counter display
+{
+	const fpsEl = document.getElementById('fps');
+	let on = false;
+	new BroadcastChannel('game-fps').onmessage = (ev) => {
+		if (!on) return;
+		fpsEl.textContent = ev.data.fps.toFixed(1) + ' FPS';
+	};
+	addEventListener('keydown', (e) => {
+		if (e.code === 'Equal' && !e.repeat) {
+			on = !on;
+			fpsEl.style.display = on ? 'block' : 'none';
+		}
+	});
+}
+
+// ---- Audio Management ----
+let audioCtx = null, audioPending = null, audioGesture = false, audioStarted = false;
+function unlockAudioContext() {
+	if (!audioCtx) {
+		const AC = window.AudioContext || window.webkitAudioContext;
+		if (AC) {
+			audioCtx = new AC({ sampleRate: 48000, latencyHint: 'interactive' });
+			if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+		}
+	} else if (audioCtx.state === 'suspended') {
+		audioCtx.resume().catch(() => {});
+	}
+}
+function tryStartAudio() {
+	if (!audioPending || audioStarted) return;
+	audioStarted = true;
+	(async () => {
+		try {
+			if (!audioCtx) unlockAudioContext();
+			if (audioCtx.state === 'suspended') await audioCtx.resume();
+			await audioCtx.audioWorklet.addModule(BASE + '/audio-worklet.js');
+			const node = new AudioWorkletNode(audioCtx, 'game-audio', {
+				numberOfInputs: 0,
+				numberOfOutputs: 1,
+				outputChannelCount: [2],
+				processorOptions: audioPending
+			});
+			node.connect(audioCtx.destination);
+			addEventListener('pointerdown', () => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); });
+			addEventListener('keydown', () => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); });
+		} catch (e) {
+			audioStarted = false;
+			console.warn('[audio] worklet start failed: ' + e);
+		}
+	})();
+}
+for (const type of ['pointerdown', 'keydown']) {
+	addEventListener(type, () => { audioGesture = true; unlockAudioContext(); tryStartAudio(); }, { capture: true });
+}
+
+// ---- Engine Bootstrap & Settings Tuning ----
+async function dropOldCache() {
+	try {
+		if (window.caches) {
+			const keys = await caches.keys();
+			for (const k of keys) if (k.startsWith('gamedata')) await caches.delete(k);
+		}
+	} catch (e) {}
+}
+
+let lowMemory = false;
+let startSize = [1280, 720], wantSize = null;
+
+function launchGameEngine() {
+	if (engineLaunched) return;
+	engineLaunched = true;
+
+	const canvas = document.getElementById('canvas');
+	const hud = document.getElementById('hud');
+
+	if (!crossOriginIsolated) {
+		const label = document.getElementById('label');
+		if (label) {
+			label.textContent = 'Not cross-origin isolated: please access via localhost or HTTPS.';
+			label.style.color = '#e66';
+		}
+		return;
+	}
+
+	const offscreen = canvas.transferControlToOffscreen();
+	dropOldCache();
+
+	const lowParam = q.get('low');
+	const isChromebook = q.get('mode') === 'chromebook';
+	const dm = navigator.deviceMemory || 8;
+	const hc = navigator.hardwareConcurrency || 4;
+
+	// WebGPU performance tuning: optimized for smooth 30-60 FPS on Intel N97 / Intel UHD Graphics
+	const wantHigh = q.get('quality') === 'high';
+	const isLowRam = (dm <= 4 || isChromebook);
+	lowMemory = lowParam === '1' || isChromebook || (lowParam !== '0' && isLowRam);
+
+	// By default on Intel UHD / low-wattage APUs:
+	// -shadowQuality=-1 skips 600-900 cascade shadow draws per frame (saves ~40ms GPU time).
+	// ?shadows=1 or ?quality=high re-enables real-time directional shadow cascades.
+	const shadowVal = q.get('shadows') === '1' ? '0' : (wantHigh ? '0' : '-1');
+	const textVal = q.get('textures') !== null ? q.get('textures') : (wantHigh ? '1' : '0');
+
+	const OPTIMIZED_ARGS = [
+		'-textureQuality=' + textVal,
+		'-pedVariety=0',
+		'-vehicleVariety=0',
+		'-shadowQuality=' + shadowVal,
+		'-reflectionQuality=0',
+		'-particleQuality=0',
+		'-grassQuality=0',
+		'-cityDensity=' + (wantHigh ? '1' : '0'),
+		'-lodScale=1',          // CRITICAL: Must be >= 1 so building interiors and door triggers stream in
+		'-pedLodBias=0',
+		'-vehicleLodBias=0',
+		'-waterQuality=0',
+		'-postFX=1',             // CRITICAL: Must be >= 1 for tone mapping, Scaleform HUD, and radar composite
+		'-tessellation=0',
+		'-motionBlurQuality=0',
+		'-fxaa=0',
+		'-dof=0',
+		'-ssao=0',
+		'-anisotropicQualityLevel=0'
+	];
+
+	// Multi-core thread allocation:
+	// 2 worker pool pthreads + 1 main wasm thread + 1 GPU thread = 4 threads (perfect 1:1 fit for 4-core Intel N97)
+	const cores = +(q.get('cores') || 0) || (wantHigh ? 4 : 2);
+
+	const storedScale = parseFloat(localStorage.getItem('gt_renderScale'));
+	let renderScale = (storedScale && storedScale >= 0.25 && storedScale <= 1.5) ? storedScale : (wantHigh ? 0.70 : 0.48);
+
+	wantSize = () => {
+		if (q.get('mode') === 'chromebook') return [910, 570];
+		const forced = /^(\d+)x(\d+)$/.exec(q.get('res') || '');
+		if (forced) return [+forced[1], +forced[2]];
+		const sc = Math.max(0.25, Math.min(2, +(q.get('scale') || renderScale)));
+		let w = innerWidth * devicePixelRatio * sc, h = innerHeight * devicePixelRatio * sc;
+		const cap = wantHigh ? [1920, 1080] : [960, 540];
+		const k = Math.min(1, cap[0] / w, cap[1] / h);
+		w *= k; h *= k;
+		return [Math.max(320, Math.round(w / 2) * 2), Math.max(240, Math.round(h / 2) * 2)];
+	};
+	startSize = wantSize();
+
+	const LOG_ARGS = q.get('verbose') ? [] : ['-Script_all=warning', '-replay_all=warning'];
+	// Production fast script core + bink thread keeps cutscenes fast and in lockstep
+	const ENGINE_ARGS = ['-fastscriptcore', '-wasmstartchoice=' + (selectedPortalMode || 1)];
+
+	// Keep fine OS timer interval
+	setInterval(() => {}, 1);
+
+	const worker = new Worker(BASE + '/loader.js');
+	worker.onmessage = (ev) => {
+		if (ev.data.hud) hud.textContent = ev.data.hud;
+		if (ev.data.input) installInput(ev.data.input.memory, ev.data.input.block);
+		if (ev.data.audio) { audioPending = ev.data.audio; tryStartAudio(); }
+	};
+	worker.onerror = (e) => { hud.textContent = 'worker error: ' + e.message; };
+
+	worker.postMessage({
+		canvas: offscreen,
+		base: BASE,
+		syncPipelines: !!q.get('syncpipelines'),
+		args: [
+			'-rootdir=/game/',
+			...(q.get('nogpu') ? [] : ['-wgpu']),
+			'-nodisplaycalibration',
+			'-noSocialClub',
+			'-pc:nosocialclub',
+			...(q.get('newgame') === '1' ? ['-noautoload'] : []),
+			'-nonetwork',
+			'-output',
+			'-width=' + startSize[0],
+			'-height=' + startSize[1],
+			'-forceResolution',
+			...LOG_ARGS,
+			...ENGINE_ARGS,
+			'-frameLimit=' + (q.get('fps') === '30' ? 2 : q.get('fps') === '0' ? 0 : 1),
+			...(cores <= 2 ? ['-numCores=' + cores] : []),
+			...OPTIMIZED_ARGS,
+			...(q.get('args') || '').split(',').filter(Boolean)
+		],
+		shotEvery: +(q.get('shot') || 0),
+		shotRt: q.get('shotrt') === '1',
+		noHints: q.get('nohints') === '1',
+		noPack: q.get('nopack') === '1',
+		cores,
+		keepThreads: 4,     // CRITICAL: keep Bink cutscene/video thread active so movie queues don't flood and hang
+		noStore: !!(q.get('nocache') || q.get('nosw')),
+		fullConsole: !!q.get('console'),
+		remoteLog,
+		lowMemory
+	}, [offscreen]);
+}
+
+// ---- Input: DOM Events & Full Gamepad Controller Support ----
+const VK = {
+	Backspace: 0x08, Tab: 0x09, Enter: 0x0D, NumpadEnter: 0xFD, Pause: 0x13, CapsLock: 0x14, Escape: 0x1B, Space: 0x20, PageUp: 0x21, PageDown: 0x22,
+	End: 0x23, Home: 0x24, ArrowLeft: 0x25, ArrowUp: 0x26, ArrowRight: 0x27, ArrowDown: 0x28, PrintScreen: 0x2C, Insert: 0x2D, Delete: 0x2E,
+	MetaLeft: 0x5B, MetaRight: 0x5C, ContextMenu: 0x5D, NumpadMultiply: 0x6A, NumpadAdd: 0x6B, NumpadSubtract: 0x6D, NumpadDecimal: 0x6E, NumpadDivide: 0x6F,
+	NumLock: 0x90, ScrollLock: 0x91, ShiftLeft: 0xA0, ShiftRight: 0xA1, ControlLeft: 0xA2, ControlRight: 0xA3, AltLeft: 0xA4, AltRight: 0xA5,
+	Semicolon: 0xBA, Equal: 0xBB, Comma: 0xBC, Minus: 0xBD, Period: 0xBE, Slash: 0xBF, Backquote: 0xC0, BracketLeft: 0xDB, Backslash: 0xDC, BracketRight: 0xDD,
+	Quote: 0xDE, IntlBackslash: 0xE2,
+};
+for (let i = 0; i < 10; i++) { VK['Digit' + i] = 0x30 + i; VK['Numpad' + i] = 0x60 + i; }
+for (let i = 0; i < 26; i++) VK['Key' + String.fromCharCode(65 + i)] = 0x41 + i;
+for (let i = 1; i <= 24; i++) VK['F' + i] = 0x6F + i;
+
+function installInput(memory, block) {
+	const canvas = document.getElementById('canvas');
+	const hud = document.getElementById('hud');
+	const keys = new Uint8Array(memory.buffer, block, 256);
+	const w = new Int32Array(memory.buffer, block + 256, 10);
+	const U16 = new Uint16Array(memory.buffer, block + 256 + 40, 64);
+	const MX = 0, MY = 1, DX = 2, DY = 3, DZ = 4, BTN = 5, FOCUS = 6, LOCKED = 7, HEAD = 8, TAIL = 9;
+	let W = startSize[0], H = startSize[1];
+	const ext = new Int32Array(memory.buffer, block + 424, 4);
+	startModeWord = new Int32Array(memory.buffer, block + 440, 1);
+	if (startMode) Atomics.store(startModeWord, 0, startMode);
+	Atomics.store(ext, 2, W); Atomics.store(ext, 3, H);
+
+	if (!q.get('fixed')) {
+		let timer = 0;
+		addEventListener('resize', () => {
+			clearTimeout(timer);
+			timer = setTimeout(() => {
+				try {
+					const [w2, h2] = wantSize();
+					if (w2 === W && h2 === H) return;
+					W = w2; H = h2;
+					Atomics.store(ext, 2, w2); Atomics.store(ext, 3, h2);
+				} catch (err) {}
+			}, 150);
+		});
+	}
+
+	addEventListener('fullscreenchange', () => {
+		try {
+			Atomics.store(w, FOCUS, document.hasFocus() ? 1 : 0);
+			Atomics.store(w, LOCKED, locked() ? 1 : 0);
+		} catch (err) {}
+	});
+
+	Atomics.store(w, FOCUS, document.hasFocus() ? 1 : 0);
+	Atomics.store(w, MX, W >> 1); Atomics.store(w, MY, H >> 1);
+
+	const passThrough = (e) => e.code === 'F12' || e.code === 'F11' || (e.ctrlKey && e.shiftKey && (e.code === 'KeyI' || e.code === 'KeyJ')) || e.code === 'F5';
+	const FLY_ALIAS = { KeyI: 'Numpad8', KeyK: 'Numpad2', KeyJ: 'Numpad4', KeyL: 'Numpad6', KeyU: 'Numpad7', KeyO: 'Numpad9' };
+
+	const kbHeld = new Set();
+	const padHeld = new Set();
+
+	const syncKey = (code) => {
+		const vk = VK[code];
+		if (!vk) return;
+		const isDown = kbHeld.has(code) || padHeld.has(code);
+		Atomics.store(keys, vk, isDown ? 0x80 : 0);
+	};
+	const syncFlyAlias = () => {
+		for (const [src, target] of Object.entries(FLY_ALIAS)) {
+			const down = kbHeld.has(src) || kbHeld.has(target) || padHeld.has(src) || padHeld.has(target);
+			Atomics.store(keys, VK[target], down ? 0x80 : 0);
+		}
+	};
+
+	addEventListener('keydown', (e) => {
+		if (passThrough(e)) return;
+		e.preventDefault();
+		kbHeld.add(e.code);
+		syncKey(e.code);
+		syncFlyAlias();
+		if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+			const head = Atomics.load(w, HEAD);
+			if (((head - Atomics.load(w, TAIL)) >>> 0) < 64) {
+				U16[head & 63] = e.key.charCodeAt(0);
+				Atomics.store(w, HEAD, (head + 1) | 0);
+			}
+		} else if (e.code === 'Backspace' || e.code === 'Enter') {
+			const head = Atomics.load(w, HEAD);
+			if (((head - Atomics.load(w, TAIL)) >>> 0) < 64) {
+				U16[head & 63] = e.code === 'Enter' ? 13 : 8;
+				Atomics.store(w, HEAD, (head + 1) | 0);
+			}
+		}
+	});
+
+	addEventListener('keyup', (e) => {
+		if (passThrough(e)) return;
+		e.preventDefault();
+		kbHeld.delete(e.code);
+		syncKey(e.code);
+		syncFlyAlias();
+	});
+
+	const releaseAll = () => {
+		kbHeld.clear();
+		for (let i = 0; i < 256; i++) {
+			let keep = false;
+			for (const c of padHeld) { if (VK[c] === i) { keep = true; break; } }
+			if (!keep) Atomics.store(keys, i, 0);
+		}
+		Atomics.store(w, BTN, padBtnState);
+	};
+
+	addEventListener('focus', () => Atomics.store(w, FOCUS, 1));
+	addEventListener('blur', () => { Atomics.store(w, FOCUS, 0); releaseAll(); });
+
+	const locked = () => document.pointerLockElement === canvas;
+
+	// Sub-pixel float accumulator for authentic 1:1 PC GTA V raw mouse input (zero deadzone, no stair-stepping)
+	let mouseAccumX = 0.0;
+	let mouseAccumY = 0.0;
+
+	// Mouse sensitivity tuning: default 1.25 (smooth, responsive PC GTA V feel in browser)
+	const storedSens = parseFloat(localStorage.getItem('gt_mouseSens'));
+	let mouseSens = (storedSens && storedSens > 0.1 && storedSens < 8.0) ? storedSens : 1.25;
+	const clampSens = (v) => Math.min(8.0, Math.max(0.2, Math.round(v * 10) / 10));
+	const showSens = () => {
+		hud.style.color = '#4ade80';
+		hud.textContent = 'Mouse Sensitivity: ' + mouseSens.toFixed(1) + 'x  ( [ / ] to tune, Backspace to reset )';
+		setTimeout(() => { if (hud.textContent.includes('Mouse Sensitivity')) hud.textContent = ''; }, 2000);
+	};
+	const KEYS_ADJ = { 'BracketLeft': -0.1, 'BracketRight': 0.1 };
+	const setScale = (newSc) => {
+		renderScale = Math.max(0.25, Math.min(1.5, Math.round(newSc * 20) / 20));
+		localStorage.setItem('gt_renderScale', String(renderScale));
+		const [w2, h2] = wantSize();
+		W = w2; H = h2;
+		Atomics.store(ext, 2, w2); Atomics.store(ext, 3, h2);
+		hud.style.color = '#4ade80';
+		hud.textContent = 'Render Resolution: ' + w2 + 'x' + h2 + ' (' + Math.round(renderScale * 100) + '%)  [ - / + to adjust ]';
+		setTimeout(() => { if (hud.textContent.includes('Render Resolution:')) hud.textContent = ''; }, 2500);
+	};
+
+	addEventListener('keydown', (e) => {
+		if (KEYS_ADJ[e.code]) {
+			mouseSens = clampSens(mouseSens + KEYS_ADJ[e.code]);
+			localStorage.setItem('gt_mouseSens', String(mouseSens));
+			showSens(); e.preventDefault();
+		} else if (e.code === 'Backspace' && startCommitted && !e.repeat) {
+			mouseSens = clampSens(1.25); localStorage.setItem('gt_mouseSens', '1.25'); showSens(); e.preventDefault();
+		} else if (e.code === 'Minus' || e.code === 'NumpadSubtract') {
+			setScale(renderScale - 0.05); e.preventDefault();
+		} else if ((e.code === 'Equal' && e.shiftKey) || e.code === 'NumpadAdd') {
+			setScale(renderScale + 0.05); e.preventDefault();
+		}
+	}, { capture: true });
+
+	const reqLock = () => {
+		if (!locked()) {
+			canvas.requestPointerLock();
+		}
+	};
+	addEventListener('click', () => { if (startCommitted && !locked()) reqLock(); });
+	canvas.addEventListener('pointerdown', (e) => {
+		reqLock();
+		Atomics.or(w, BTN, 1 << [0, 2, 1, 3, 4][e.button]);
+		e.preventDefault();
+	});
+	canvas.addEventListener('mousedown', (e) => {
+		reqLock();
+		Atomics.or(w, BTN, 1 << [0, 2, 1, 3, 4][e.button]);
+		e.preventDefault();
+	});
+	addEventListener('mouseup', (e) => { Atomics.and(w, BTN, ~(1 << [0, 2, 1, 3, 4][e.button])); });
+	addEventListener('contextmenu', (e) => e.preventDefault());
+	document.addEventListener('pointerlockchange', () => {
+		const isLock = locked();
+		Atomics.store(w, LOCKED, isLock ? 1 : 0);
+	});
+	addEventListener('mousemove', (e) => {
+		const r = canvas.getBoundingClientRect();
+		if (locked()) {
+			mouseAccumX += e.movementX * mouseSens;
+			mouseAccumY += e.movementY * mouseSens;
+			const nX = Math.trunc(mouseAccumX);
+			const nY = Math.trunc(mouseAccumY);
+			if (nX) {
+				Atomics.add(w, DX, nX);
+				mouseAccumX -= nX;
+			}
+			if (nY) {
+				Atomics.add(w, DY, nY);
+				mouseAccumY -= nY;
+			}
+			const x = Math.max(0, Math.min(W - 1, Atomics.load(w, MX) + nX));
+			const y = Math.max(0, Math.min(H - 1, Atomics.load(w, MY) + nY));
+			Atomics.store(w, MX, x);
+			Atomics.store(w, MY, y);
+		} else {
+			const x = Math.max(0, Math.min(W - 1, Math.round((e.clientX - r.left) * W / r.width)));
+			const y = Math.max(0, Math.min(H - 1, Math.round((e.clientY - r.top) * H / r.height)));
+			Atomics.add(w, DX, x - Atomics.load(w, MX));
+			Atomics.add(w, DY, y - Atomics.load(w, MY));
+			Atomics.store(w, MX, x);
+			Atomics.store(w, MY, y);
+		}
+	});
+
+	let wheelAccum = 0;
+	addEventListener('wheel', (e) => {
+		e.preventDefault();
+		wheelAccum += -e.deltaY / (e.deltaMode === 0 ? 100 : e.deltaMode === 1 ? 3 : 1);
+		const n = Math.trunc(wheelAccum);
+		if (n) { wheelAccum -= n; Atomics.add(w, DZ, n); }
+	}, { passive: false });
+
+	// ---- Full Controller Support: Xbox One, PS5 (DualSense), PS4 (DualShock 4) ----
+	let padAccumX = 0.0, padAccumY = 0.0;
+	let padBtnState = 0;
+	let padShown = false, lastPad = '';
+	let lastRumble = 0;
+
+	const padLabel = (id) => {
+		const s = (id || '').toLowerCase();
+		if (/dualshock 4|054c.*05c4|054c.*09cc|ps4|playstation 4/.test(s)) return 'PlayStation 4 DualShock 4 Controller';
+		if (/dualsense|054c.*0ce6|ps5|playstation 5/.test(s)) return 'PlayStation 5 DualSense Controller';
+		if (/xbox|045e|xinput|8bitdo/.test(s)) return 'Xbox One / Series Controller';
+		if (/switch|057e/.test(s)) return 'Nintendo Switch Pro Controller';
+		return 'Standard Wireless / USB Controller';
+	};
+
+	function rumblePad(pad, duration = 60, weak = 0.25, strong = 0.35) {
+		const now = performance.now();
+		if (now - lastRumble < 60) return;
+		lastRumble = now;
+		try {
+			if (pad && pad.vibrationActuator && pad.vibrationActuator.playEffect) {
+				pad.vibrationActuator.playEffect('dual-rumble', {
+					startDelay: 0, duration, weakMagnitude: weak, strongMagnitude: strong
+				}).catch(() => {});
+			}
+		} catch (err) {}
+	}
+
+	function setPadKey(code, down) {
+		if (down) padHeld.add(code); else padHeld.delete(code);
+		syncKey(code);
+	}
+
+	function pollPad() {
+		const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+		let pad = null;
+		for (const p of pads) if (p && p.connected) { pad = p; break; }
+		if (!pad) {
+			if (padShown) {
+				padShown = false;
+				hud.textContent = '';
+				const prev = [...padHeld];
+				padHeld.clear();
+				prev.forEach(syncKey);
+				Atomics.and(w, BTN, ~padBtnState);
+				padBtnState = 0;
+			}
+			requestAnimationFrame(pollPad);
+			return;
+		}
+
+		const id = padLabel(pad.id);
+		if (!padShown || lastPad !== id) {
+			padShown = true; lastPad = id;
+			hud.style.color = '#4ade80';
+			hud.textContent = id + ' Connected — Full Game Controls Active';
+			setTimeout(() => { if (hud.textContent.includes('Connected')) hud.textContent = ''; }, 3500);
+		}
+
+		// Keep engine focused and locked for gamepad look & input
+		Atomics.store(w, LOCKED, 1);
+		Atomics.store(w, FOCUS, 1);
+
+		const ax = pad.axes || [];
+		const bt = pad.buttons || [];
+		const get = (i) => (ax[i] || 0);
+		const btn = (i) => {
+			const b = bt[i];
+			if (!b) return false;
+			return typeof b === 'number' ? b > 0.5 : (b.pressed || b.value > 0.2);
+		};
+		const triggerVal = (i) => {
+			const b = bt[i];
+			if (!b) return 0;
+			return typeof b === 'number' ? b : (b.value !== undefined ? b.value : (b.pressed ? 1 : 0));
+		};
+
+		// Triggers: LT / L2 (Aim / Brake) & RT / R2 (Fire / Accelerate)
+		const ltVal = triggerVal(6);
+		const rtVal = triggerVal(7);
+		const ltDown = ltVal > 0.15;
+		const rtDown = rtVal > 0.15;
+
+		// 1. Left Stick -> WASD Movement & Vehicle Steering
+		const LX = get(0), LY = get(1);
+		const lDead = 0.16;
+		setPadKey('KeyA', LX < -lDead);
+		setPadKey('KeyD', LX > lDead);
+		const forward = (LY < -lDead) || (rtDown && !ltDown && lMag > lDead);
+		const backward = (LY > lDead) || (ltDown && !rtDown && lMag > lDead);
+		setPadKey('KeyW', forward);
+		setPadKey('KeyS', backward);
+
+		const lMag = Math.hypot(LX, LY);
+		const stickSprint = lMag > 0.88;
+
+		// 2. Right Stick -> Look Rotation
+		const RX = get(2), RY = get(3);
+		const rDead = 0.12;
+		const rDist = Math.hypot(RX, RY);
+		if (rDist > rDead) {
+			const norm = Math.min(1.0, (rDist - rDead) / (1.0 - rDead));
+			const curve = Math.pow(norm, 1.8);
+			const angle = Math.atan2(RY, RX);
+			const speed = 18.0 * mouseSens;
+			padAccumX += Math.cos(angle) * curve * speed;
+			padAccumY += Math.sin(angle) * curve * speed;
+			const sx = Math.trunc(padAccumX);
+			const sy = Math.trunc(padAccumY);
+			padAccumX -= sx;
+			padAccumY -= sy;
+			if (sx) Atomics.add(w, DX, sx);
+			if (sy) Atomics.add(w, DY, sy);
+		}
+
+		let newBtn = 0;
+		if (rtDown) {
+			newBtn |= 1; // Left Click (Fire weapon)
+			rumblePad(pad, 50, 0.25, 0.4);
+		}
+		if (ltDown) {
+			newBtn |= 2; // Right Click (Aim weapon)
+		}
+		if ((padBtnState & 1) !== (newBtn & 1)) {
+			if (newBtn & 1) Atomics.or(w, BTN, 1); else Atomics.and(w, BTN, ~1);
+		}
+		if ((padBtnState & 2) !== (newBtn & 2)) {
+			if (newBtn & 2) Atomics.or(w, BTN, 2); else Atomics.and(w, BTN, ~2);
+		}
+		padBtnState = newBtn;
+
+		// 3. Face Buttons
+		// A / Cross (btn 0): Sprint
+		setPadKey('ShiftLeft', btn(0) || stickSprint);
+		// X / Square (btn 2): Jump / Climb / Vault
+		setPadKey('Space', btn(2));
+		// Y / Triangle (btn 3): Enter / Exit Vehicle
+		setPadKey('KeyF', btn(3));
+		// B / Circle (btn 1): Reload / Melee
+		setPadKey('KeyR', btn(1));
+
+		// 4. Bumpers
+		// LB / L1 (btn 4): Weapon Wheel
+		setPadKey('Tab', btn(4));
+		// RB / R1 (btn 5): Take Cover on foot / Handbrake in vehicle
+		setPadKey('KeyQ', btn(5));
+		if (btn(5)) setPadKey('Space', true);
+
+		// 5. Stick Clicks
+		// L3 / LS (btn 10): Stealth Crouch / Horn
+		setPadKey('ControlLeft', btn(10));
+		setPadKey('KeyE', btn(10));
+		// R3 / RS (btn 11): Look Behind / Special Ability
+		setPadKey('KeyC', btn(11));
+		setPadKey('CapsLock', btn(11));
+
+		// 6. Navigation
+		// Start / Options (btn 9): Pause Menu
+		setPadKey('Escape', btn(9));
+		// Back / View / Touchpad (btn 8 & 17): Camera View Mode
+		setPadKey('KeyV', btn(8) || btn(17));
+
+		// 7. D-Pad Controls
+		// D-Pad Up (btn 12): Phone Up
+		setPadKey('ArrowUp', btn(12));
+		// D-Pad Down (btn 13): Minimap Zoom & Radar Expand / Character Switch
+		setPadKey('KeyZ', btn(13));
+		setPadKey('AltLeft', btn(13));
+		setPadKey('ArrowDown', btn(13));
+		// D-Pad Left (btn 14): Radio Prev / Phone Left
+		setPadKey('ArrowLeft', btn(14));
+		// D-Pad Right (btn 15): Enter Building / Interact / Radio Next / Headlights
+		setPadKey('KeyE', btn(15));
+		setPadKey('KeyH', btn(15));
+		setPadKey('ArrowRight', btn(15));
+
+		// Guide Button (btn 16)
+		if (btn(16)) setPadKey('Escape', true);
+
+		requestAnimationFrame(pollPad);
+	}
+
+	let m_padStarted = false;
+	const padWarm = () => { if (!m_padStarted) { m_padStarted = true; requestAnimationFrame(pollPad); } };
+	if (navigator.getGamepads) setInterval(() => { if (!document.hidden && !m_padStarted) padWarm(); }, 200);
+	addEventListener('gamepadconnected', () => { padShown = false; padWarm(); });
+	addEventListener('gamepaddisconnected', () => { padShown = false; });
+	padWarm();
+}
+</script>
+</body>
+</html>
