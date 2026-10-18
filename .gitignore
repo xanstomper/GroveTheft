@@ -1,5 +1,4 @@
 # Brotli sidecars — regenerate with: python3 compress.py
-www/**/*.br
 # Optional offline data cache (up to ~13 GB) — created by --mirror-data
 data_mirror/
 __pycache__/
