@@ -22,16 +22,16 @@ GroveTheft is two pieces:
 2. **The game content** (~21 GB: map, models, textures, audio, scripts) — **not bundled**. It streams on-demand over HTTP Range requests from a content origin, relayed through your local server, and cached to disk as you play.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────────┐
 │                      YOUR BROWSER                            │
 │  index.html (cleaned, rebranded, zero third-party calls)     │
 │   ├── loader.js ────── engine bootstrap + GPU/IO workers     │
 │   ├── game.wasm ────── RAGE engine (Brotli + immutable cache)│
 │   ├── wgpu_worker.js ─ WebGPU renderer (local shader packs)  │
 │   └── io_worker.js ─── IndexedDB streaming + savegames       │
-└──────────────────────────┬──────────────────────────────────┘
+└──────────────────────────┬───────────────────────────────────┘
                            │  (localhost only)
-┌──────────────────────────▼──────────────────────────────────┐
+┌──────────────────────────▼───────────────────────────────────┐
 │               server.py — GroveTheft Host                    │
 │  • Static: Brotli sidecars, immutable wasm caching           │
 │  • mods/ tree: GTA-V-style file overrides (range-aware)      │
@@ -39,7 +39,7 @@ GroveTheft is two pieces:
 │  • Auto-cache: every streamed file saved to data_mirror/     │
 │  • COOP/COEP isolation headers on every response             │
 │  • 30s socket timeouts — hung streams can't wedge the server │
-└─────────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ### The load sequence, step by step
